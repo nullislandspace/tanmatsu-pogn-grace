@@ -20,6 +20,7 @@
 #include "portmacro.h"
 #include "bounce_sounds.h"
 #include "hershey_font.h"
+#include "app_volume.h"
 
 // External BSP audio function (not in public header)
 extern void bsp_audio_initialize(uint32_t rate);
@@ -370,6 +371,11 @@ static void render_game(game_state_t* g) {
 // ── Input Handling ───────────────────────────────────────────────────────────
 
 static void handle_input(bsp_input_event_t* event, game_state_t* g) {
+    // Volume keys and audio jack are handled globally
+    if (app_volume_handle_event(event)) {
+        return;
+    }
+
     if (event->type == INPUT_EVENT_TYPE_NAVIGATION) {
         // ESC or F1 → back to launcher
         if (event->args_navigation.key == BSP_INPUT_NAVIGATION_KEY_ESC ||
@@ -476,8 +482,7 @@ void app_main(void) {
     // Initialize audio
     bsp_audio_initialize(SAMPLE_RATE);
     bsp_audio_get_i2s_handle(&i2s_handle);
-    bsp_audio_set_amplifier(true);
-    bsp_audio_set_volume(100);
+    app_volume_init();  // Amplifier and volume from the global settings
 
     memset(active_sounds, 0, sizeof(active_sounds));
     xTaskCreatePinnedToCore(audio_task, "audio", 4096, NULL, configMAX_PRIORITIES - 2, NULL, 1);
